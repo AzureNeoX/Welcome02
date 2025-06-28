@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(45deg, #800080, #333333, #800080, #0000ff, #ff69b4, #ff00ff, #ffd700);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .container {
+            background: linear-gradient(45deg, #ffd700, #f0f0f0);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+            border: 2px solid #333333;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(15px);
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #ff00ff;
+            text-shadow: 0 0 4px #800080;
+        }
+
+        p {
+            color: #000000;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background: linear-gradient(45deg, #800080, #ff69b4);
+            color: #333333;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            margin: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            animation: pulse 2s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        button:hover {
+            box-shadow: 0 0 8px #ff00ff;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, #ffd700, transparent);
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: width 0.3s, height 0.3s, opacity 0.3s;
+        }
+
+        button:active::after {
+            width: 150px;
+            height: 150px;
+            opacity: 0.3;
+        }
+
+        #keyDisplay {
+            font-weight: bold;
+            margin: 20px 0;
+            color: #0000ff;
+            text-shadow: 0 0 4px #ff69b4;
+            word-wrap: break-word;
+        }
+
+        #countdown {
+            font-size: 16px;
+            color: #ff00ff;
+            text-shadow: 0 0 2px #800080;
+            margin: 10px 0;
+        }
+
+        #note, #successNote {
+            font-size: 14px;
+            color: #333333;
+            margin: 10px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #shutdownPage {
+            color: #ff00ff;
+            text-shadow: 0 0 4px #800080;
+            font-size: 18px;
+            padding: 20px;
+            background: linear-gradient(45deg, #ffd700, #f0f0f0);
+            border: 2px solid #333333;
+            border-radius: 10px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="page1">
+        <h2>Welcome!</h2>
+        <p>Please subscribe to our YouTube channel to continue.</p>
+        <a href="https://youtube.com/@arceusxarchive?si=MVWUnnwOp5MhbFl-" target="_blank">
+            <button id="subscribeBtn">Subscribe</button>
+        </a>
+        <button id="continueBtn1" class="hidden" onclick="showPage2()">Continue</button>
+    </div>
+
+    <div class="container hidden" id="page2">
+        <h2>Create Your Key</h2>
+        <p>Just Wait And Hit Continue To Get whitelisted</p>
+        <button id="continueBtn2" class="hidden" onclick="showKey()">Continue</button>
+    </div>
+
+    <div class="container hidden" id="page3">
+        <h2>Your Key</h2>
+        <p id="keyDisplay"></p>
+        <p id="countdown"></p>
+        <p id="note">Note: Reopen On Sunday.</p>
+        <p id="successNote">You've Been Added To The Whitelist! Go Back To The Service To Get Access Now.</p>
+        <button onclick="copyKey()">Copy Key</button>
+    </div>
+
+    <div class="container hidden" id="shutdownPage">
+        <h2>Time's Up!</h2>
+        <p>If You See This, It Means That Time Has Run Out and You Have to Quickly Look at the Key Before Shutdown</p>
+        <p>Note: Reopen On Sunday.</p>
+    </div>
+
+    <script>
+        const EXPIRE_SECONDS = 50 * 1000; // 40 detik dalam milidetik
+        const CUSTOM_KEY = 'KiwiFlare'; // Ganti key ini dengan key yang Anda inginkan
+        const SECRET_SALT = 'your-secret-salt-123'; // Salt untuk hash, ganti dengan nilai unik
+
+        // Fungsi untuk enkripsi sederhana (Base64)
+        function encryptKey(key) {
+            return btoa(key + SECRET_SALT);
+        }
+
+        // Fungsi untuk dekripsi sederhana
+        function decryptKey(encryptedKey) {
+            try {
+                const decoded = atob(encryptedKey);
+                return decoded.replace(SECRET_SALT, '');
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Fungsi untuk membuat hash sederhana
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0; // Convert to 32bit integer
+            }
+            return hash.toString();
+        }
+
+        // Fungsi untuk memeriksa integritas data
+        function verifyData(key, startTime) {
+            const storedHash = localStorage.getItem('dataHash');
+            const computedHash = simpleHash(key + startTime + SECRET_SALT);
+            return storedHash === computedHash;
+        }
+
+        // Fungsi untuk memeriksa apakah hari ini adalah Minggu
+        function isSunday() {
+            return new Date().getDay() === 0; // 0 adalah Minggu
+        }
+
+        // Fungsi untuk mendeteksi DevTools (anti-debugging sederhana)
+        function detectDevTools() {
+            const threshold = 160;
+            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                alert('Developer Tools detected! Access restricted.');
+                resetToInitialState();
+            }
+        }
+
+        // Fungsi untuk memeriksa dan menangani waktu expire
+        function checkExpiration() {
+            const startTime = localStorage.getItem('startTime');
+            const encryptedKey = localStorage.getItem('key');
+            if (startTime && encryptedKey) {
+                const key = decryptKey(encryptedKey);
+                if (!key || !verifyData(key, startTime)) {
+                    alert('Data tampering detected! Resetting...');
+                    resetToInitialState();
+                    return;
+                }
+                const currentTime = new Date().getTime();
+                const elapsedTime = currentTime - parseInt(startTime);
+                if (elapsedTime >= EXPIRE_SECONDS) {
+                    localStorage.setItem('currentPage', 'shutdown');
+                    showShutdownPage();
+                } else {
+                    updateCountdown(EXPIRE_SECONDS - elapsedTime);
+                }
+            }
+        }
+
+        // Fungsi untuk memperbarui countdown
+        function updateCountdown(remainingTime) {
+            const countdownElement = document.getElementById('countdown');
+            if (countdownElement) {
+                const seconds = Math.floor(remainingTime / 1000);
+                countdownElement.textContent = `Time Left: ${seconds}s`;
+            }
+        }
+
+        // Fungsi untuk menampilkan halaman shutdown
+        function showShutdownPage() {
+            document.getElementById('page1').classList.add('hidden');
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('page3').classList.add('hidden');
+            document.getElementById('shutdownPage').classList.remove('hidden');
+        }
+
+        // Fungsi untuk mereset ke halaman awal
+        function resetToInitialState() {
+            localStorage.removeItem('startTime');
+            localStorage.removeItem('currentPage');
+            localStorage.removeItem('key');
+            localStorage.removeItem('dataHash');
+            document.getElementById('page1').classList.remove('hidden');
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('page3').classList.add('hidden');
+            document.getElementById('shutdownPage').classList.add('hidden');
+            document.getElementById('continueBtn1').classList.add('hidden');
+            document.getElementById('continueBtn2').classList.add('hidden');
+            document.getElementById('keyDisplay').textContent = '';
+            document.getElementById('countdown').textContent = '';
+        }
+
+        // Fungsi untuk menyimpan waktu mulai
+        function setStartTime() {
+            resetToInitialState(); // Reset sebelum set waktu baru
+            const startTime = new Date().getTime();
+            localStorage.setItem('startTime', startTime);
+            const encryptedKey = encryptKey(CUSTOM_KEY);
+            localStorage.setItem('key', encryptedKey);
+            localStorage.setItem('dataHash', simpleHash(CUSTOM_KEY + startTime + SECRET_SALT));
+        }
+
+        // Fungsi untuk memuat halaman berdasarkan status
+        function loadPageState() {
+            // Reset otomatis pada hari Minggu
+            if (isSunday()) {
+                resetToInitialState();
+                return;
+            }
+
+            const currentPage = localStorage.getItem('currentPage');
+            const encryptedKey = localStorage.getItem('key');
+            const startTime = localStorage.getItem('startTime');
+            if (currentPage && encryptedKey && startTime) {
+                const key = decryptKey(encryptedKey);
+                if (!key || !verifyData(key, startTime)) {
+                    alert('Data tampering detected! Resetting...');
+                    resetToInitialState();
+                    return;
+                }
+                if (currentPage === 'page2') {
+                    document.getElementById('page1').classList.add('hidden');
+                    document.getElementById('page2').classList.remove('hidden');
+                    setTimeout(() => {
+                        document.getElementById('continueBtn2').classList.remove('hidden');
+                    }, 5000);
+                } else if (currentPage === 'page3') {
+                    document.getElementById('page1').classList.add('hidden');
+                    document.getElementById('page2').classList.add('hidden');
+                    document.getElementById('page3').classList.remove('hidden');
+                    document.getElementById('keyDisplay').textContent = key;
+                } else if (currentPage === 'shutdown') {
+                    showShutdownPage();
+                } else {
+                    resetToInitialState();
+                }
+            } else {
+                resetToInitialState();
+            }
+            checkExpiration();
+        }
+
+        // Simulasi tombol Continue muncul setelah klik Subscribe
+        document.getElementById('subscribeBtn').addEventListener('click', () => {
+            setStartTime();
+            setTimeout(() => {
+                document.getElementById('continueBtn1').classList.remove('hidden');
+            }, 2000);
+        });
+
+        // Pindah ke halaman Create Your Key
+        function showPage2() {
+            const startTime = localStorage.getItem('startTime');
+            const encryptedKey = localStorage.getItem('key');
+            if (!startTime || !encryptedKey || !verifyData(decryptKey(encryptedKey), startTime)) {
+                alert('Invalid access! Resetting...');
+                resetToInitialState();
+                return;
+            }
+            document.getElementById('page1').classList.add('hidden');
+            document.getElementById('page2').classList.remove('hidden');
+            localStorage.setItem('currentPage', 'page2');
+            setTimeout(() => {
+                document.getElementById('continueBtn2').classList.remove('hidden');
+            }, 5000);
+            checkExpiration();
+        }
+
+        // Tampilkan key yang telah ditentukan
+        function showKey() {
+            const startTime = localStorage.getItem('startTime');
+            const encryptedKey = localStorage.getItem('key');
+            if (!startTime || !encryptedKey || !verifyData(decryptKey(encryptedKey), startTime)) {
+                alert('Invalid access! Resetting...');
+                resetToInitialState();
+                return;
+            }
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('page3').classList.remove('hidden');
+            const key = decryptKey(encryptedKey);
+            document.getElementById('keyDisplay').textContent = key;
+            localStorage.setItem('currentPage', 'page3');
+            checkExpiration();
+        }
+
+        // Fungsi untuk menyalin key
+        function copyKey() {
+            const key = document.getElementById('keyDisplay').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                alert('Key copied to clipboard!');
+            });
+        }
+
+        // Periksa expire setiap 100ms untuk akurasi
+        setInterval(checkExpiration, 100);
+
+        // Deteksi DevTools setiap 1 detik
+        setInterval(detectDevTools, 1000);
+
+        // Muat status halaman saat halaman dimuat
+        window.onload = loadPageState;
+    </script>
+</body>
+</html>
