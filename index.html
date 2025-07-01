@@ -130,7 +130,7 @@
 <body>
     <div class="container" id="page1">
         <h2>Welcome!</h2>
-        <p>Please subscribe to our YouTube channel to continue.</p>
+        <p>Please Subscribe To Our Youtube Channel To Continue.</p>
         <a href="https://youtube.com/@arceusxarchive?si=MVWUnnwOp5MhbFl-" target="_blank">
             <button id="subscribeBtn">Subscribe</button>
         </a>
@@ -147,19 +147,20 @@
         <h2>Your Key</h2>
         <p id="keyDisplay"></p>
         <p id="countdown"></p>
-        <p id="note">Note: Reopen On Sunday.</p>
-        <p id="successNote">You've Been Added To The Whitelist! Go Back To The Service To Get Access Now.</p>
+        <p id="note">Reopen In One Month.</p>
+        <p id="successNote">You've Been Added To The Whitelist! Go Back To The Service To Get Access Now</p>
         <button onclick="copyKey()">Copy Key</button>
     </div>
 
     <div class="container hidden" id="shutdownPage">
         <h2>Time's Up!</h2>
-        <p>If You See This, It Means That Time Has Run Out and You Have to Quickly Look at the Key Before Shutdown</p>
-        <p>Note: Reopen On Sunday.</p>
+        <p>If You're Seeing This, Time's Up! Quick, Check The Key Before It Shuts Down</p>
+        <p>Reopen In One Month.</p>
     </div>
 
     <script>
-        const EXPIRE_SECONDS = 50 * 1000; // 40 detik dalam milidetik
+        const EXPIRE_SECONDS = 40 * 1000; // 40 detik dalam milidetik
+        const COOLDOWN_MONTH = 30 * 24 * 60 * 60 * 1000; // 30 hari dalam milidetik
         const CUSTOM_KEY = 'KiwiFlare'; // Ganti key ini dengan key yang Anda inginkan
         const SECRET_SALT = 'your-secret-salt-123'; // Salt untuk hash, ganti dengan nilai unik
 
@@ -195,9 +196,12 @@
             return storedHash === computedHash;
         }
 
-        // Fungsi untuk memeriksa apakah hari ini adalah Minggu
-        function isSunday() {
-            return new Date().getDay() === 0; // 0 adalah Minggu
+        // Fungsi untuk memeriksa apakah cooldown satu bulan telah selesai
+        function isCooldownExpired() {
+            const startTime = localStorage.getItem('startTime');
+            if (!startTime) return true; // Jika tidak ada startTime, anggap cooldown selesai
+            const currentTime = new Date().getTime();
+            return (currentTime - parseInt(startTime)) >= COOLDOWN_MONTH;
         }
 
         // Fungsi untuk mendeteksi DevTools (anti-debugging sederhana)
@@ -278,8 +282,8 @@
 
         // Fungsi untuk memuat halaman berdasarkan status
         function loadPageState() {
-            // Reset otomatis pada hari Minggu
-            if (isSunday()) {
+            // Reset otomatis jika cooldown satu bulan selesai
+            if (isCooldownExpired()) {
                 resetToInitialState();
                 return;
             }
